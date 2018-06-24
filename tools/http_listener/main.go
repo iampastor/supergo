@@ -39,6 +39,9 @@ func main() {
 			}
 			resp.Write([]byte(fmt.Sprintf("hello, %s", name)))
 		})
+		/* http.HandleFunc("/world", func(resp http.ResponseWriter, req *http.Request) {
+			resp.Write([]byte("hello, world"))
+		}) */
 		http.HandleFunc("/sleep", func(resp http.ResponseWriter, req *http.Request) {
 			wg.Add(1)
 			defer wg.Done()

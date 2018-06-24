@@ -22,6 +22,13 @@ type Program struct {
 	logger *log.Logger
 }
 
+type ProgramStatus struct {
+	Name      string
+	StartTime int64
+	StopTime  int64
+	State     string
+}
+
 type ProgramState string
 
 const (

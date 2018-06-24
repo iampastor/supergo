@@ -37,7 +37,8 @@ func main() {
 	for name, p := range cfg.ProgramConfigs {
 		p, err := super.AddProgram(name, p)
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
+			continue
 		}
 		p.StartProcess()
 	}
@@ -46,7 +47,12 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	go super.ServeHTTP(l)
+
+	apiServer := &supervisord.APIServer{
+		Supervisor:  super,
+		CfgFilepath: configFile,
+	}
+	go apiServer.ServeHTTP(l)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP)

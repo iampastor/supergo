@@ -22,8 +22,10 @@ type Program struct {
 	logger *log.Logger
 }
 
+// TODO: 完善信息
 type ProgramStatus struct {
 	Name      string
+	Pid       int64
 	StartTime int64
 	StopTime  int64
 	State     string

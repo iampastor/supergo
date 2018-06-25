@@ -164,6 +164,7 @@ func (supervisor *Supervisor) Reload(cfgs map[string]*ProgramConfig) error {
 	return nil
 }
 
+// TODO: 对比新旧配置，返回新增，删除和更新了的项目
 func (supervisor *Supervisor) diff(oldCfgs map[string]*ProgramConfig, newCfgs map[string]*ProgramConfig) (
 	inserts map[string]*ProgramConfig,
 	deletes map[string]*ProgramConfig,

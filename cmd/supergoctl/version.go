@@ -7,7 +7,7 @@ import (
 
 var banner = `
 ---------------------------------------------------------
-                        supergo
+                        supergoctl
 Version:	%v
 BuildTime:	%v
 GitHash:	%v

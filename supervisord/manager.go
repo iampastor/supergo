@@ -168,7 +168,7 @@ func (supervisor *Supervisor) Reload(cfgs map[string]*ProgramConfig) error {
 			log.Printf("update program %s error: %s", name, err.Error())
 		}
 	}
-
+	supervisor.cfg.ProgramConfigs = cfgs
 	return nil
 }
 
@@ -178,7 +178,6 @@ func (supervisor *Supervisor) Diff(newCfgs map[string]*ProgramConfig) (
 	deletes map[string]*ProgramConfig,
 	updates map[string]*ProgramConfig) {
 	oldCfgs := supervisor.cfg.ProgramConfigs
-	supervisor.cfg.ProgramConfigs = newCfgs
 	return diffConfigs(oldCfgs, newCfgs)
 }
 

@@ -17,18 +17,18 @@ type Program struct {
 	process  *Process
 	files    []*os.File
 	maxRetry int
-	state    ProgramState
+	logger   *log.Logger
 
-	logger *log.Logger
+	status *ProgramStatus
 }
 
-// TODO: 完善信息
+// 完善信息
 type ProgramStatus struct {
-	Name      string
-	Pid       int64
-	StartTime int64
-	StopTime  int64
-	State     string
+	Name      string `json:"name,omitempty"`
+	Pid       int    `json:"pid,omitempty"`
+	StartTime int64  `json:"start_time,omitempty"`
+	StopTime  int64  `json:"stop_time,omitempty"`
+	State     string `json:"state,omitempty"`
 }
 
 type ProgramState string
@@ -42,23 +42,29 @@ const (
 )
 
 type ProgramConfig struct {
-	Directory   string   `toml:"directory"`
-	Command     string   `toml:"command"`
-	Args        []string `toml:"args"`
-	AutoRestart bool     `toml:"auto_restart"`
-	StdoutFile  string   `toml:"stdout_file"`
-	StderrFile  string   `toml:"stderr_file"`
-	MaxRetry    int      `toml:"max_retry"`
-	ListenAddrs []string `toml:"listen_addrs"`
-	StopTimeout int      `toml:"stop_timeout"`
+	Directory   string   `toml:"directory" json:"directory"`
+	Command     string   `toml:"command" json:"command"`
+	Args        []string `toml:"args" json:"args"`
+	AutoRestart bool     `toml:"auto_restart" json:"auto_restart"`
+	StdoutFile  string   `toml:"stdout_file" json:"stdout_file"`
+	StderrFile  string   `toml:"stderr_file" json:"stderr_file"`
+	MaxRetry    int      `toml:"max_retry" json:"max_retry"`
+	ListenAddrs []string `toml:"listen_addrs" json:"listen_addrs"`
+	StopTimeout int      `toml:"stop_timeout" json:"stop_timeout"`
 }
 
 func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 	p = &Program{
 		cfg:    cfg,
 		Name:   name,
-		state:  ProcessStateStopped,
 		logger: log.New(os.Stderr, "["+name+"] ", log.LstdFlags|log.Lshortfile),
+		status: &ProgramStatus{
+			Name:      name,
+			Pid:       0,
+			StartTime: 0,
+			StopTime:  0,
+			State:     ProcessStateStopped,
+		},
 	}
 
 	var files []*os.File
@@ -88,6 +94,10 @@ func (program *Program) Destory() {
 	return
 }
 
+func (program *Program) Status() *ProgramStatus {
+	return program.status
+}
+
 type Process struct {
 	cmd      *exec.Cmd
 	stopChan chan struct{}
@@ -95,11 +105,11 @@ type Process struct {
 }
 
 func (program *Program) StartProcess() {
-	if program.state != ProcessStateStopped && program.state != ProcessStateExited {
+	if program.status.State != ProcessStateStopped && program.status.State != ProcessStateExited {
 		return
 	}
 	program.logger.Printf("start")
-	program.state = ProcessStateStarting
+	program.status.State = ProcessStateStarting
 	go program.startNewProcess()
 	return
 }
@@ -111,6 +121,9 @@ func (program *Program) startNewProcess() {
 		Args:   append([]string{program.cfg.Command}, program.cfg.Args...),
 		Stderr: os.Stderr,
 		Stdout: os.Stdout,
+		SysProcAttr: &syscall.SysProcAttr{
+			Setpgid: true,
+		},
 	}
 	cmd.ExtraFiles = program.files
 
@@ -122,8 +135,11 @@ func (program *Program) startNewProcess() {
 	// TODO: exit code expected
 	err := process.run()
 	if err == nil {
+		program.status.StartTime = time.Now().Unix()
+		program.status.Pid = process.cmd.Process.Pid
+
 		program.maxRetry = 0
-		program.state = ProcessStateRunning
+		program.status.State = ProcessStateRunning
 		exitCode, err := process.wait()
 		// 进程执行完毕，可能是程序自动退出，也可能是通过stop退出
 		close(process.stopChan)
@@ -143,7 +159,7 @@ func (program *Program) startNewProcess() {
 
 func (program *Program) shouldRetry() {
 	// 如果是被手动停止的，则不需要重启
-	if program.state == ProcessStateStopped {
+	if program.status.State == ProcessStateStopped {
 		return
 	}
 	if program.cfg.AutoRestart {
@@ -154,21 +170,21 @@ func (program *Program) shouldRetry() {
 			program.startNewProcess()
 		} else {
 			program.logger.Printf("max retry excessed")
-			program.state = ProcessStateExited
+			program.status.State = ProcessStateExited
 		}
 	} else {
 		program.logger.Printf("exited")
-		program.state = ProcessStateExited
+		program.status.State = ProcessStateExited
 	}
 }
 
 func (program *Program) RestartProess() (process *Process) {
-	if program.state != ProcessStateRunning {
+	if program.status.State != ProcessStateRunning {
 		return
 	}
 	program.logger.Printf("restart")
 	oldProc := program.process
-	program.state = ProcessStateStarting
+	program.status.State = ProcessStateStarting
 	go program.startNewProcess()
 	if oldProc != nil {
 		oldProc.spawn = true
@@ -179,13 +195,15 @@ func (program *Program) RestartProess() (process *Process) {
 }
 
 func (program *Program) StopProcess() (exitCode int) {
-	if program.state != ProcessStateRunning {
+	if program.status.State != ProcessStateRunning {
 		return
 	}
 	program.logger.Printf("stop")
 	proc := program.process
-	program.state = ProcessStateStopped
+	program.status.State = ProcessStateStopped
 	program.stopProc(proc)
+	program.status.StopTime = time.Now().Unix()
+	program.status.Pid = 0
 	program.process = nil
 	return
 }
@@ -203,10 +221,6 @@ func (program *Program) stopProc(proc *Process) error {
 	}
 
 	return nil
-}
-
-func (program *Program) GetState() ProgramState {
-	return program.state
 }
 
 func (process *Process) run() error {

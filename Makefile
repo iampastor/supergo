@@ -6,7 +6,7 @@ BUILD_NAME = bin/supervisord-go
 default:build
 
 build:vet
-	@go build  -ldflags ${LDFLAGS} -o ${BUILD_NAME} ./cmd/supervisord
+	@go build  -ldflags ${LDFLAGS} -o ${BUILD_NAME} ./cmd/supergo
 
 tar:build
 	tar -czvf ${BUILD_NAME}.tar.gz ${BUILD_NAME} config

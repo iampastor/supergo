@@ -16,6 +16,7 @@ type APIServer struct {
 func (s *APIServer) ServeHTTP(l net.Listener) error {
 	mu := httprouter.New()
 	mu.Handle(http.MethodGet, "/status", s.getStatus)
+	mu.Handle(http.MethodGet, "/reread", s.reReadConfig)
 	mu.Handle(http.MethodPost, "/update", s.updatePrograms)
 	mu.Handle(http.MethodPost, "/start/:name", s.startProgram)
 	mu.Handle(http.MethodPost, "/stop/:name", s.stopProgram)
@@ -97,7 +98,6 @@ func (s *APIServer) updatePrograms(w http.ResponseWriter, req *http.Request, par
 		w.Write(resp.ToJson())
 		return
 	}
-
 	err = s.Reload(cfg.ProgramConfigs)
 	if err != nil {
 		resp.Status = 1
@@ -107,6 +107,33 @@ func (s *APIServer) updatePrograms(w http.ResponseWriter, req *http.Request, par
 		return
 	}
 
+	resp.Message = "success"
+	w.Write(resp.ToJson())
+}
+
+func (s *APIServer) reReadConfig(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	resp := new(HttpResponse)
+	cfg, err := ParseConfigFile(s.CfgFilepath)
+	if err != nil {
+		resp.Status = 1
+		resp.Message = err.Error()
+		w.Write(resp.ToJson())
+		return
+	}
+
+	ins, dels, ups := s.Supervisor.Diff(cfg.ProgramConfigs)
+
+	data := make(map[string]interface{})
+	if len(ins) != 0 {
+		data["inserts"] = ins
+	}
+	if len(dels) != 0 {
+		data["deletes"] = dels
+	}
+	if len(ups) != 0 {
+		data["updates"] = ups
+	}
+	resp.Data = data
 	resp.Message = "success"
 	w.Write(resp.ToJson())
 }

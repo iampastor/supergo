@@ -8,3 +8,14 @@ stderr_file = "/tmp/hello.err"
 max_retry = 3
 listen_addrs = [":4041"]
 stop_timeout = 10
+
+[program.test1]
+directory = "/Users/bounce/Documents/gowork/src/github.com/iampastor/supervisor/tools/http_listener"
+command = "./http_listener"
+args = ["world"]
+auto_restart = true
+stdout_file = "/tmp/hello.log"
+stderr_file = "/tmp/hello.err"
+max_retry = 3
+listen_addrs = [":4042"]
+stop_timeout = 10

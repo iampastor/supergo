@@ -20,6 +20,7 @@ var err error
 var wg sync.WaitGroup
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("start http server")
 	fileListener := os.NewFile(3, "ghttpserver")
 	if fileListener == nil {
@@ -80,6 +81,7 @@ func main() {
 	case syscall.SIGTERM:
 		l.Close()
 		wg.Wait()
+		log.Println("stop http server")
+		os.Exit(0)
 	}
-	log.Println("stop http server")
 }

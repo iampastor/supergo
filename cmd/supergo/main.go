@@ -29,6 +29,7 @@ func init() {
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	cfg, err := supervisord.ParseConfigFile(configFile)
 	if err != nil {
 		log.Panic(err)
@@ -62,6 +63,7 @@ func main() {
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
 			super.Exit()
+			log.Printf("exit")
 			return
 		case syscall.SIGHUP:
 		default:

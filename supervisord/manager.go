@@ -3,6 +3,7 @@ package supervisord
 import (
 	"errors"
 	"log"
+	"reflect"
 	"sync"
 )
 
@@ -31,8 +32,12 @@ func NewSupervisor(cfg *SupervisorConfig) *Supervisor {
 
 func (supervisor *Supervisor) AddProgram(name string, progCfg *ProgramConfig) (prog *Program, err error) {
 	prog, err = NewProgram(name, progCfg)
+	if err != nil {
+		return
+	}
 	supervisor.lock.Lock()
 	supervisor.porgrams[name] = prog
+	supervisor.cfg.ProgramConfigs[name] = progCfg
 	supervisor.lock.Unlock()
 	return
 }
@@ -73,7 +78,9 @@ func (supervisor *Supervisor) RestartProgram(name string) error {
 func (supervisor *Supervisor) DeleteProgram(name string) error {
 	supervisor.lock.RLock()
 	prog, ok := supervisor.porgrams[name]
-	supervisor.lock.Unlock()
+	delete(supervisor.porgrams, name)
+	delete(supervisor.cfg.ProgramConfigs, name)
+	supervisor.lock.RUnlock()
 	if !ok {
 		return ErrProgramNotFound
 	}
@@ -119,6 +126,8 @@ func (supervisor *Supervisor) ListPrograms() []*Program {
 }
 
 func (supervisor *Supervisor) Exit() {
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	for _, program := range supervisor.porgrams {
 		program.StopProcess()
 		program.Destory()
@@ -126,19 +135,18 @@ func (supervisor *Supervisor) Exit() {
 }
 
 func (supervisor *Supervisor) GetStatus() []*ProgramStatus {
+	supervisor.lock.RLock()
+	defer supervisor.lock.RUnlock()
 	status := make([]*ProgramStatus, 0, len(supervisor.porgrams))
-	for name, prog := range supervisor.porgrams {
-		s := &ProgramStatus{
-			Name:  name,
-			State: string(prog.GetState()),
-		}
+	for _, prog := range supervisor.porgrams {
+		s := prog.Status()
 		status = append(status, s)
 	}
 	return status
 }
 
 func (supervisor *Supervisor) Reload(cfgs map[string]*ProgramConfig) error {
-	inserts, deletes, updates := supervisor.diff(supervisor.cfg.ProgramConfigs, cfgs)
+	inserts, deletes, updates := supervisor.Diff(cfgs)
 	for name, _ := range deletes {
 		err := supervisor.DeleteProgram(name)
 		if err != nil {
@@ -164,11 +172,43 @@ func (supervisor *Supervisor) Reload(cfgs map[string]*ProgramConfig) error {
 	return nil
 }
 
-// TODO: 对比新旧配置，返回新增，删除和更新了的项目
-func (supervisor *Supervisor) diff(oldCfgs map[string]*ProgramConfig, newCfgs map[string]*ProgramConfig) (
+// 对比新旧配置，返回新增，删除和更新了的项目
+func (supervisor *Supervisor) Diff(newCfgs map[string]*ProgramConfig) (
+	inserts map[string]*ProgramConfig,
+	deletes map[string]*ProgramConfig,
+	updates map[string]*ProgramConfig) {
+	oldCfgs := supervisor.cfg.ProgramConfigs
+	supervisor.cfg.ProgramConfigs = newCfgs
+	return diffConfigs(oldCfgs, newCfgs)
+}
+
+func diffConfigs(oldCfgs map[string]*ProgramConfig, newCfgs map[string]*ProgramConfig) (
 	inserts map[string]*ProgramConfig,
 	deletes map[string]*ProgramConfig,
 	updates map[string]*ProgramConfig) {
 
+	inserts = make(map[string]*ProgramConfig)
+	deletes = make(map[string]*ProgramConfig)
+	updates = make(map[string]*ProgramConfig)
+
+	for name, ne := range newCfgs {
+		if _, ok := oldCfgs[name]; !ok {
+			inserts[name] = ne
+		}
+	}
+
+	for name, ne := range oldCfgs {
+		if _, ok := newCfgs[name]; !ok {
+			deletes[name] = ne
+		}
+	}
+
+	for name, old := range oldCfgs {
+		if ne, ok := newCfgs[name]; ok {
+			if !reflect.DeepEqual(old, ne) {
+				updates[name] = ne
+			}
+		}
+	}
 	return
 }

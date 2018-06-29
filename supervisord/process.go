@@ -115,12 +115,26 @@ func (program *Program) StartProcess() {
 }
 
 func (program *Program) startNewProcess() {
+	var stderr, stdout *os.File
+	var err error
+	if program.cfg.StderrFile != "" {
+		stderr, err = os.OpenFile(program.cfg.StderrFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+		if err != nil {
+			program.logger.Printf("open file %s: %s", program.cfg.StderrFile, err.Error())
+		}
+	}
+	if program.cfg.StderrFile != "" {
+		stdout, err = os.OpenFile(program.cfg.StdoutFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+		if err != nil {
+			program.logger.Printf("open file %s: %s", program.cfg.StderrFile, err.Error())
+		}
+	}
 	cmd := &exec.Cmd{
 		Dir:    program.cfg.Directory,
 		Path:   program.cfg.Command,
 		Args:   append([]string{program.cfg.Command}, program.cfg.Args...),
-		Stderr: os.Stderr,
-		Stdout: os.Stdout,
+		Stderr: stderr,
+		Stdout: stdout,
 		SysProcAttr: &syscall.SysProcAttr{
 			Setpgid: true,
 		},
@@ -132,14 +146,20 @@ func (program *Program) startNewProcess() {
 		stopChan: make(chan struct{}, 1),
 	}
 	program.process = process
-	// TODO: exit code expected
-	err := process.run()
+	err = process.run()
+	if stderr != nil {
+		stderr.Close()
+	}
+	if stdout != nil {
+		stdout.Close()
+	}
 	if err == nil {
 		program.status.StartTime = time.Now().Unix()
 		program.status.Pid = process.cmd.Process.Pid
 
 		program.maxRetry = 0
 		program.status.State = ProcessStateRunning
+		// TODO: exit code expected
 		exitCode, err := process.wait()
 		// 进程执行完毕，可能是程序自动退出，也可能是通过stop退出
 		close(process.stopChan)

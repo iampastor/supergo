@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/iampastor/supervisor/supervisord"
 )
 
 var (
@@ -75,103 +78,121 @@ func main() {
 }
 
 type ApiResponse struct {
-	Status  int         `json:"status"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Status  int             `json:"status"`
+	Message string          `json:"message"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
+func get(cmd string) (*ApiResponse, error) {
+	resp, err := client.Get(fmt.Sprintf("%s/%s", urlAddr, cmd))
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	apiResp := new(ApiResponse)
+	json.Unmarshal(data, apiResp)
+	if apiResp.Status != 0 {
+		return nil, errors.New(apiResp.Message)
+	}
+	return apiResp, nil
+}
+
+func post(cmd string, name string) (*ApiResponse, error) {
+	resp, err := client.PostForm(fmt.Sprintf("%s/%s/%s", urlAddr, cmd, name), nil)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	apiResp := new(ApiResponse)
+	json.Unmarshal(data, apiResp)
+	if apiResp.Status != 0 {
+		return nil, errors.New(apiResp.Message)
+	}
+	return apiResp, nil
 }
 
 func status() {
-	resp, err := client.Get(urlAddr + "/status")
+	resp, err := get("status")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
+	var progStatus []*supervisord.ProgramStatus
+	if err := json.Unmarshal(resp.Data, &progStatus); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error()+string(resp.Data))
 	}
-	apiResp := new(ApiResponse)
-	json.Unmarshal(data, apiResp)
-	fmt.Fprintln(os.Stderr, apiResp)
+	for _, ps := range progStatus {
+		if ps.State == supervisord.ProcessStateRunning {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d start at %s", ps.Name, ps.State, ps.Pid,
+				time.Unix(ps.StartTime, 0).Format("2006/01/02 15:04:05")))
+		} else if ps.State == supervisord.ProcessStateStopped {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d stop at  %s", ps.Name, ps.State, ps.Pid,
+				time.Unix(ps.StopTime, 0).Format("2006/01/02 15:04:05")))
+		}
+	}
 }
 
 func reread() {
-	resp, err := client.Get(urlAddr + "/reread")
+	resp, err := get("reread")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
+
+	changes := make(map[string]map[string]*supervisord.ProgramConfig)
+	json.Unmarshal(resp.Data, &changes)
+	ins := changes["inserts"]
+	dels := changes["deletes"]
+	ups := changes["updates"]
+	for name, _ := range ins {
+		fmt.Fprintln(os.Stderr, name, "add")
 	}
-	apiResp := new(ApiResponse)
-	json.Unmarshal(data, apiResp)
-	fmt.Fprintln(os.Stderr, apiResp)
+	for name, _ := range dels {
+		fmt.Fprintln(os.Stderr, name, "delete")
+	}
+	for name, _ := range ups {
+		fmt.Fprintln(os.Stderr, name, "update")
+	}
 }
 
 func update() {
-	resp, err := client.PostForm(urlAddr+"/update", nil)
+	resp, err := post("update", "")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-	apiResp := new(ApiResponse)
-	json.Unmarshal(data, apiResp)
-	fmt.Fprintln(os.Stderr, apiResp)
+	fmt.Fprintln(os.Stderr, string(resp.Message))
 }
 
 func start(name string) {
-	resp, err := client.PostForm(urlAddr+"/start/"+name, nil)
+	resp, err := post("start", name)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-	apiResp := new(ApiResponse)
-	json.Unmarshal(data, apiResp)
-	fmt.Fprintln(os.Stderr, apiResp)
+	fmt.Fprintln(os.Stderr, string(resp.Message))
 }
 
 func stop(name string) {
-	resp, err := client.PostForm(urlAddr+"/stop/"+name, nil)
+	resp, err := post("stop", name)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-	apiResp := new(ApiResponse)
-	json.Unmarshal(data, apiResp)
-	fmt.Fprintln(os.Stderr, apiResp)
+	fmt.Fprintln(os.Stderr, string(resp.Message))
 }
 
 func restart(name string) {
-	resp, err := client.PostForm(urlAddr+"/restart/"+name, nil)
+	resp, err := post("restart", name)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
-	apiResp := new(ApiResponse)
-	json.Unmarshal(data, apiResp)
-	fmt.Fprintln(os.Stderr, apiResp)
+	fmt.Fprintln(os.Stderr, string(resp.Message))
 }

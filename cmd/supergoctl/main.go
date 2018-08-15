@@ -129,10 +129,10 @@ func status() {
 	}
 	for _, ps := range progStatus {
 		if ps.State == supervisord.ProcessStateRunning {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d start at %s", ps.Name, ps.State, ps.Pid,
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tstart at %s", ps.Name, ps.State, ps.Pid,
 				time.Unix(ps.StartTime, 0).Format("2006/01/02 15:04:05")))
 		} else if ps.State == supervisord.ProcessStateStopped {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d stop at  %s", ps.Name, ps.State, ps.Pid,
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tstop at  %s", ps.Name, ps.State, ps.Pid,
 				time.Unix(ps.StopTime, 0).Format("2006/01/02 15:04:05")))
 		}
 	}

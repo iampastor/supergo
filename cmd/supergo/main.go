@@ -18,7 +18,7 @@ var (
 
 func init() {
 	v := flag.Bool("version", false, "print version info & exit")
-	flag.StringVar(&configFile, "config", "config/supervisord.toml", "supervisord config file path")
+	flag.StringVar(&configFile, "config", "config/supergo.toml", "supervisord config file path")
 	flag.StringVar(&listenAddr, "listen", "127.0.0.1:22106", "listen address")
 	flag.Parse()
 

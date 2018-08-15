@@ -106,16 +106,16 @@ func (program *Program) StartProcess() {
 func (program *Program) startNewProcess() {
 	var stderr, stdout *os.File
 	var err error
-	if program.cfg.StderrFile != "" {
-		stderr, err = os.OpenFile(program.cfg.StderrFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	if program.cfg.StderrLogFile != "" {
+		stderr, err = os.OpenFile(program.cfg.StderrLogFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
-			program.logger.Printf("open file %s: %s", program.cfg.StderrFile, err.Error())
+			program.logger.Printf("open file %s: %s", program.cfg.StderrLogFile, err.Error())
 		}
 	}
-	if program.cfg.StderrFile != "" {
-		stdout, err = os.OpenFile(program.cfg.StdoutFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	if program.cfg.StderrLogFile != "" {
+		stdout, err = os.OpenFile(program.cfg.StdoutLogFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
-			program.logger.Printf("open file %s: %s", program.cfg.StderrFile, err.Error())
+			program.logger.Printf("open file %s: %s", program.cfg.StderrLogFile, err.Error())
 		}
 	}
 	progCmds := strings.Split(strings.TrimSpace(program.cfg.Command), " ")

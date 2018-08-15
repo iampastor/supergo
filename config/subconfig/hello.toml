@@ -1,0 +1,10 @@
+[program.test1]
+directory = "/Users/bounce/Documents/gowork/src/github.com/iampastor/supervisor/tools/http_listener"
+command = "./http_listener"
+args = ["-hello=world", "username=password"]
+auto_restart = true
+stdout_file = ""
+stderr_file = ""
+max_retry = 3
+listen_addrs = [":4042"]
+stop_timeout = 10

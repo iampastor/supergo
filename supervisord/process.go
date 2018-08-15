@@ -41,18 +41,6 @@ const (
 	ProcessStateExited  = "Exited"
 )
 
-type ProgramConfig struct {
-	Directory   string   `toml:"directory" json:"directory"`
-	Command     string   `toml:"command" json:"command"`
-	Args        []string `toml:"args" json:"args"`
-	AutoRestart bool     `toml:"auto_restart" json:"auto_restart"`
-	StdoutFile  string   `toml:"stdout_file" json:"stdout_file"`
-	StderrFile  string   `toml:"stderr_file" json:"stderr_file"`
-	MaxRetry    int      `toml:"max_retry" json:"max_retry"`
-	ListenAddrs []string `toml:"listen_addrs" json:"listen_addrs"`
-	StopTimeout int      `toml:"stop_timeout" json:"stop_timeout"`
-}
-
 func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 	p = &Program{
 		cfg:    cfg,

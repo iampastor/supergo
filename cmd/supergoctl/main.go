@@ -22,12 +22,12 @@ var (
 
 Commands:
 
-	supergoctl status
-	supergoctl reread
-	supergoctl update
-	supergoctl start prog
-	supergoctl stop prog
-	supergoctl restart prog
+supergoctl status
+supergoctl reread
+supergoctl update
+supergoctl start <prog>
+supergoctl stop <prog>
+supergoctl restart <prog>
 `
 )
 

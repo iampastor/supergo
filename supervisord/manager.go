@@ -13,10 +13,6 @@ type Supervisor struct {
 	cfg      *SupervisorConfig
 }
 
-type SupervisorConfig struct {
-	ProgramConfigs map[string]*ProgramConfig `toml:"program"`
-}
-
 var (
 	ErrProgramNotFound = errors.New("program not found")
 )
@@ -31,21 +27,21 @@ func NewSupervisor(cfg *SupervisorConfig) *Supervisor {
 }
 
 func (supervisor *Supervisor) AddProgram(name string, progCfg *ProgramConfig) (prog *Program, err error) {
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	prog, err = NewProgram(name, progCfg)
 	if err != nil {
 		return
 	}
-	supervisor.lock.Lock()
 	supervisor.porgrams[name] = prog
 	supervisor.cfg.ProgramConfigs[name] = progCfg
-	supervisor.lock.Unlock()
 	return
 }
 
 func (supervisor *Supervisor) StartProgram(name string) error {
-	supervisor.lock.RLock()
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	prog, ok := supervisor.porgrams[name]
-	supervisor.lock.RUnlock()
 	if !ok {
 		return ErrProgramNotFound
 	}
@@ -54,9 +50,9 @@ func (supervisor *Supervisor) StartProgram(name string) error {
 }
 
 func (supervisor *Supervisor) StopProgram(name string) error {
-	supervisor.lock.RLock()
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	prog, ok := supervisor.porgrams[name]
-	supervisor.lock.RUnlock()
 	if !ok {
 		return ErrProgramNotFound
 	}
@@ -65,9 +61,9 @@ func (supervisor *Supervisor) StopProgram(name string) error {
 }
 
 func (supervisor *Supervisor) RestartProgram(name string) error {
-	supervisor.lock.RLock()
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	prog, ok := supervisor.porgrams[name]
-	supervisor.lock.RUnlock()
 	if !ok {
 		return ErrProgramNotFound
 	}
@@ -76,11 +72,11 @@ func (supervisor *Supervisor) RestartProgram(name string) error {
 }
 
 func (supervisor *Supervisor) DeleteProgram(name string) error {
-	supervisor.lock.RLock()
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	prog, ok := supervisor.porgrams[name]
 	delete(supervisor.porgrams, name)
 	delete(supervisor.cfg.ProgramConfigs, name)
-	supervisor.lock.RUnlock()
 	if !ok {
 		return ErrProgramNotFound
 	}
@@ -90,9 +86,9 @@ func (supervisor *Supervisor) DeleteProgram(name string) error {
 }
 
 func (supervisor *Supervisor) UpdateProgram(name string, progCfg *ProgramConfig) (prog *Program, err error) {
-	supervisor.lock.RLock()
+	supervisor.lock.Lock()
+	defer supervisor.lock.Unlock()
 	prog, ok := supervisor.porgrams[name]
-	supervisor.lock.RUnlock()
 	if !ok {
 		return nil, ErrProgramNotFound
 	}
@@ -103,9 +99,7 @@ func (supervisor *Supervisor) UpdateProgram(name string, progCfg *ProgramConfig)
 		return
 	}
 	newProg.StartProcess()
-	supervisor.lock.Lock()
 	supervisor.porgrams[name] = newProg
-	supervisor.lock.Unlock()
 	return
 }
 

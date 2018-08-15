@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -117,10 +118,11 @@ func (program *Program) startNewProcess() {
 			program.logger.Printf("open file %s: %s", program.cfg.StderrFile, err.Error())
 		}
 	}
+	progCmds := strings.Split(strings.TrimSpace(program.cfg.Command), " ")
 	cmd := &exec.Cmd{
 		Dir:    program.cfg.Directory,
-		Path:   program.cfg.Command,
-		Args:   append([]string{program.cfg.Command}, program.cfg.Args...),
+		Path:   progCmds[0],
+		Args:   append(progCmds, program.cfg.Args...),
 		Stderr: stderr,
 		Stdout: stdout,
 		SysProcAttr: &syscall.SysProcAttr{

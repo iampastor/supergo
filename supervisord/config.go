@@ -31,7 +31,9 @@ type ProgramConfig struct {
 }
 
 func newSupervisordConfig() *SupervisorConfig {
-	return &SupervisorConfig{}
+	return &SupervisorConfig{
+		ProgramConfigs: make(map[string]*ProgramConfig),
+	}
 }
 
 func ParseConfigFile(filepath string) (*SupervisorConfig, error) {

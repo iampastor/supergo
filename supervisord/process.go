@@ -128,16 +128,16 @@ func (program *Program) startNewProcess() {
 	}
 	progCmds := strings.Split(strings.TrimSpace(program.cfg.Command), " ")
 	cmd := &exec.Cmd{
-		Dir:    program.cfg.Directory,
-		Path:   progCmds[0],
-		Args:   append(progCmds, program.cfg.Args...),
-		Stderr: stderr,
-		Stdout: stdout,
+		Dir:        program.cfg.Directory,
+		Path:       progCmds[0],
+		Args:       append(progCmds, program.cfg.Args...),
+		Stderr:     stderr,
+		Stdout:     stdout,
+		ExtraFiles: program.files, // 传递文件描述符
 		SysProcAttr: &syscall.SysProcAttr{
-			Setpgid: true,
+			Setpgid: true, // 设置进程组ID为自己
 		},
 	}
-	cmd.ExtraFiles = program.files
 
 	process := &Process{
 		cmd:      cmd,
@@ -155,9 +155,14 @@ func (program *Program) startNewProcess() {
 		program.status.StartTime = time.Now().Unix()
 		program.status.Pid = process.cmd.Process.Pid
 
+		// FIXME: 进程运行一段时间后，才能设置为Running
 		program.status.State = ProcessStateRunning
-		// TODO: exit code expected
+		// TODO: 允许配置返回的状态码
 		exitCode, err := process.wait()
+
+		// 如果进程启动之后迅速的退出，说明进程本身有问题，需要在进程启动一定的时间之后，才将重试的次数设置为0，
+		// 防止进程因为异常一直重启而不会被发现
+		// TODO: 该时间可配置
 		if time.Now().Unix()-program.status.StartTime > 1 {
 			program.maxRetry = 0
 		}
@@ -190,12 +195,14 @@ func (program *Program) shouldRetry() {
 			program.startNewProcess()
 		} else {
 			program.logger.Printf("max retry excessed")
+			// 进程异常重启的次数超过最大值，进程的状态将设置为Fatal
 			program.status.State = ProcessStateFatal
 			program.status.StopTime = time.Now().Unix()
 			program.process = nil
 		}
 	} else {
 		program.logger.Printf("exited")
+		// 进程正常的结束，状态为Exited
 		program.status.State = ProcessStateExited
 		program.status.StopTime = time.Now().Unix()
 		program.process = nil
@@ -234,6 +241,7 @@ func (program *Program) StopProcess() (exitCode int) {
 }
 
 func (program *Program) stopProc(proc *Process) error {
+	// TODO: 允许配置进程退出的时发送的信号量
 	if err := proc.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		program.logger.Printf("stop process %s", err.Error())
 	}

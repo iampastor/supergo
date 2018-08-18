@@ -18,7 +18,7 @@ var (
 
 	usage = `Usage of supergoctl:
 
--url 127.0.0.1:22106
+-url 127.0.0.1:22106 // supergo的地址
 
 Commands:
 
@@ -34,6 +34,7 @@ supergoctl restart <prog>
 func init() {
 	v := flag.Bool("version", false, "print version info & exit")
 	flag.StringVar(&urlAddr, "url", "http://127.0.0.1:22106", "supergo server url address")
+
 	flag.Parse()
 
 	if *v {

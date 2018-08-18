@@ -1,12 +1,12 @@
 #[program.test]
-#directory = "/home/www"
-#command = " ./http_listener -arg=test world"
-#auto_restart = true
-#stdout_file = "/tmp/hello.log"
-#stderr_file = "/tmp/hello.err"
-#max_retry = 3
-#listen_addrs = [":4041"]
-#stop_timeout = 10
+#directory = "/home/www" # 进程运行的目录
+#command = " ./http_listener -arg=test world" # 运行的指令
+#auto_restart = true # 是否自动重启
+#stdout_file = "/tmp/hello.log" # 进程的标准输出，为空将不会输出
+#stderr_file = "/tmp/hello.err" # 进程的标准错误输出，为空将不会输出
+#max_retry = 3 # 重启的次数
+#listen_addrs = [":4041"] # 进程需要监听的端口，从文件描述符3开始
+#stop_timeout = 10 # 重启时，将发送TRERM信号，如果超时进程还没有退出，将强行KILL
 
 [include]
 files = "config/conf.d/*.toml"

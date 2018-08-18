@@ -22,7 +22,7 @@ type ProgramConfig struct {
 	Directory     string   `toml:"directory" json:"directory"`
 	Command       string   `toml:"command" json:"command"`
 	Args          []string `toml:"args" json:"args"`
-	AutoRestart   bool     `toml:"autorestart" json:"auto_restart"`
+	AutoRestart   bool     `toml:"auto_restart" json:"auto_restart"`
 	StdoutLogFile string   `toml:"stdout_logfile" json:"stdout_logfile"`
 	StderrLogFile string   `toml:"stderr_logfile" json:"stderr_logfile"`
 	MaxRetry      int      `toml:"max_retry" json:"max_retry"`

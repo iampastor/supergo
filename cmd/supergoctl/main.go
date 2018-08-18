@@ -134,6 +134,9 @@ func status() {
 		} else if ps.State == supervisord.ProcessStateStopped {
 			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tstop at  %s", ps.Name, ps.State, ps.Pid,
 				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05")))
+		} else {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\t%s", ps.Name, ps.State, ps.Pid,
+				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05")))
 		}
 	}
 }

@@ -40,6 +40,8 @@ const (
 	// ProcessStateStopping = "Stopping"
 	ProcessStateStopped = "Stopped"
 	ProcessStateExited  = "Exited"
+	ProcessStateFatal   = "Fatal"
+	ProcessStateUnknown = "Unknown"
 )
 
 func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
@@ -94,7 +96,7 @@ type Process struct {
 }
 
 func (program *Program) StartProcess() {
-	if program.status.State != ProcessStateStopped && program.status.State != ProcessStateExited {
+	if program.status.State != ProcessStateStopped && program.status.State != ProcessStateExited && program.status.State != ProcessStateFatal {
 		return
 	}
 	program.logger.Printf("start")
@@ -104,6 +106,12 @@ func (program *Program) StartProcess() {
 }
 
 func (program *Program) startNewProcess() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(err)
+			program.status.State = ProcessStateUnknown
+		}
+	}()
 	var stderr, stdout *os.File
 	var err error
 	if program.cfg.StderrLogFile != "" {
@@ -147,10 +155,12 @@ func (program *Program) startNewProcess() {
 		program.status.StartTime = time.Now().Unix()
 		program.status.Pid = process.cmd.Process.Pid
 
-		program.maxRetry = 0
 		program.status.State = ProcessStateRunning
 		// TODO: exit code expected
 		exitCode, err := process.wait()
+		if time.Now().Unix()-program.status.StartTime > 1 {
+			program.maxRetry = 0
+		}
 		// 进程执行完毕，可能是程序自动退出，也可能是通过stop退出
 		close(process.stopChan)
 		if err != nil {
@@ -180,21 +190,26 @@ func (program *Program) shouldRetry() {
 			program.startNewProcess()
 		} else {
 			program.logger.Printf("max retry excessed")
-			program.status.State = ProcessStateExited
+			program.status.State = ProcessStateFatal
+			program.status.StopTime = time.Now().Unix()
+			program.process = nil
 		}
 	} else {
 		program.logger.Printf("exited")
 		program.status.State = ProcessStateExited
+		program.status.StopTime = time.Now().Unix()
+		program.process = nil
 	}
 }
 
 func (program *Program) RestartProess() (process *Process) {
-	if program.status.State != ProcessStateRunning {
+	if program.status.State == ProcessStateStarting {
 		return
 	}
 	program.logger.Printf("restart")
 	oldProc := program.process
 	program.status.State = ProcessStateStarting
+	program.maxRetry = 0
 	go program.startNewProcess()
 	if oldProc != nil {
 		oldProc.spawn = true

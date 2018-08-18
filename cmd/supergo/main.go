@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iampastor/supervisor/supervisord"
+	"github.com/iampastor/supergo/supervisord"
 )
 
 var (

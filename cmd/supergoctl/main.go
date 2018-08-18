@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/iampastor/supervisor/supervisord"
+	"github.com/iampastor/supergo/supervisord"
 )
 
 var (

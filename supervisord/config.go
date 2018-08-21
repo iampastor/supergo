@@ -50,6 +50,12 @@ func ParseConfigFile(filepath string) (*SupervisorConfig, error) {
 			continue
 		}
 		for name, c := range subCfg.ProgramConfigs {
+			if c.StopTimeout == 0 {
+				c.StopTimeout = 10
+			}
+			if c.MaxRetry == 0 {
+				c.MaxRetry = 3
+			}
 			cfg.ProgramConfigs[name] = c
 		}
 	}

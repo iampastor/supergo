@@ -15,10 +15,11 @@ type Program struct {
 	Name string
 	cfg  *ProgramConfig
 
-	process  *Process
-	files    []*os.File
-	maxRetry int
-	logger   *log.Logger
+	process   *Process
+	files     []*os.File
+	maxRetry  int
+	logger    *log.Logger
+	startChan chan struct{}
 
 	status *ProgramStatus
 }
@@ -56,6 +57,7 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 			StopTime:  0,
 			State:     ProcessStateStopped,
 		},
+		startChan: make(chan struct{}, 1),
 	}
 
 	var files []*os.File
@@ -92,7 +94,7 @@ func (program *Program) Status() *ProgramStatus {
 type Process struct {
 	cmd      *exec.Cmd
 	stopChan chan struct{}
-	spawn    bool
+	spawn    bool // 标识是否是手动restart
 }
 
 func (program *Program) StartProcess() {
@@ -102,6 +104,7 @@ func (program *Program) StartProcess() {
 	program.logger.Printf("start")
 	program.status.State = ProcessStateStarting
 	go program.startNewProcess()
+	<-program.startChan
 	return
 }
 
@@ -143,7 +146,7 @@ func (program *Program) startNewProcess() {
 		cmd:      cmd,
 		stopChan: make(chan struct{}, 1),
 	}
-	program.process = process
+
 	err = process.run()
 	if stderr != nil {
 		stderr.Close()
@@ -155,23 +158,37 @@ func (program *Program) startNewProcess() {
 		program.status.StartTime = time.Now().Unix()
 		program.status.Pid = process.cmd.Process.Pid
 
-		// FIXME: 进程运行一段时间后，才能设置为Running
-		program.status.State = ProcessStateRunning
-		// TODO: 允许配置返回的状态码
-		exitCode, err := process.wait()
-
+		type processResult struct {
+			exitCode int
+			err      error
+		}
+		var result *processResult
+		resultChan := make(chan *processResult, 1)
+		go func() {
+			exitCode, err := process.wait()
+			resultChan <- &processResult{exitCode, err}
+		}()
+		select {
 		// 如果进程启动之后迅速的退出，说明进程本身有问题，需要在进程启动一定的时间之后，才将重试的次数设置为0，
 		// 防止进程因为异常一直重启而不会被发现
-		// TODO: 该时间可配置
-		if time.Now().Unix()-program.status.StartTime > 1 {
+		case <-time.After(time.Second):
+			// 进程运行一段时间后，才能设置为Running
+			program.status.State = ProcessStateRunning
 			program.maxRetry = 0
+			program.process = process
+			program.startChan <- struct{}{}
+
+			result = <-resultChan
+
+		case result = <-resultChan:
 		}
+
 		// 进程执行完毕，可能是程序自动退出，也可能是通过stop退出
 		close(process.stopChan)
 		if err != nil {
-			program.logger.Printf("wait error: %s", err.Error())
+			program.logger.Printf("wait error: %s", result.err.Error())
 		}
-		program.logger.Printf("exit with code %d", exitCode)
+		program.logger.Printf("exit with code %d", result.exitCode)
 		// 如果是restart，该进程则不需要自动重启
 		if process.spawn {
 			return
@@ -218,6 +235,8 @@ func (program *Program) RestartProess() (process *Process) {
 	program.status.State = ProcessStateStarting
 	program.maxRetry = 0
 	go program.startNewProcess()
+	// 保证第二个进程已经启动
+	<-program.startChan
 	if oldProc != nil {
 		oldProc.spawn = true
 		program.stopProc(oldProc)

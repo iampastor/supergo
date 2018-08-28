@@ -44,7 +44,7 @@ func init() {
 }
 
 var client = &http.Client{
-	Timeout: time.Second * 30,
+	// Timeout: time.Second * 30,
 }
 
 func main() {
@@ -133,10 +133,10 @@ func status() {
 			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tlisteners %v\tstart at %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
 				time.Unix(ps.StartTime, 0).Format("2006-01-02 15:04:05")))
 		} else if ps.State == supervisord.ProcessStateStopped {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tlisteners %v\tstop at  %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tlisteners %v\tstop at %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
 				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05")))
 		} else {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tlisteners %v\t%s", ps.Name, ps.State, ps.Pid, ps.Listeners,
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-10s\t%-8s\tpid %-5d\tlisteners %v\tend at %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
 				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05")))
 		}
 	}

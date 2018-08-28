@@ -149,6 +149,7 @@ func (supervisor *Supervisor) Reload(cfgs map[string]*ProgramConfig) error {
 		p, err := supervisor.AddProgram(name, cfg)
 		if err != nil {
 			log.Printf("add program %s error %s", name, err.Error())
+			continue
 		}
 		p.StartProcess()
 	}

@@ -62,33 +62,41 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 		startChan: make(chan struct{}, 1),
 	}
 
+	err = p.initListener()
+	return
+}
+
+func (program *Program) initListener() error {
 	var files []*os.File
-	for _, addr := range cfg.ListenAddrs {
+	for _, addr := range program.cfg.ListenAddrs {
 		var l net.Listener
 		var f *os.File
-		l, err = net.Listen("tcp", addr)
+		l, err := net.Listen("tcp", addr)
 		if err != nil {
-			p.status.State = ProcessStateFatal
-			return
+			program.status.State = ProcessStateFatal
+			return err
 		}
 		f, err = l.(*net.TCPListener).File()
 		if err != nil {
-			p.status.State = ProcessStateFatal
+			program.status.State = ProcessStateFatal
 			l.Close()
-			return
+			return err
 		}
 		l.Close()
 		files = append(files, f)
 	}
-	p.files = files
-	return
+	program.files = files
+	return nil
+}
+
+func (program *Program) closeListener() {
+	for _, l := range program.files {
+		l.Close()
+	}
 }
 
 func (program *Program) Destory() {
-	for _, f := range program.files {
-		f.Close()
-	}
-	return
+	program.closeListener()
 }
 
 func (program *Program) Status() *ProgramStatus {
@@ -221,6 +229,7 @@ func (program *Program) shouldRetry() {
 			program.status.State = ProcessStateFatal
 			program.status.StopTime = time.Now().Unix()
 			program.process = nil
+			program.startChan <- struct{}{}
 		}
 	} else {
 		program.logger.Printf("exited")

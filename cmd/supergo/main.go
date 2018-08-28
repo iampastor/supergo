@@ -38,7 +38,7 @@ func main() {
 	for name, p := range cfg.ProgramConfigs {
 		p, err := super.AddProgram(name, p)
 		if err != nil {
-			log.Println(err)
+			log.Printf("add program %s: %s", name, err.Error())
 			continue
 		}
 		p.StartProcess()

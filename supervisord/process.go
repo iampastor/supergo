@@ -26,11 +26,12 @@ type Program struct {
 
 // 完善信息
 type ProgramStatus struct {
-	Name      string `json:"name,omitempty"`
-	Pid       int    `json:"pid,omitempty"`
-	StartTime int64  `json:"start_time,omitempty"`
-	StopTime  int64  `json:"stop_time,omitempty"`
-	State     string `json:"state,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	Pid       int      `json:"pid,omitempty"`
+	StartTime int64    `json:"start_time,omitempty"`
+	StopTime  int64    `json:"stop_time,omitempty"`
+	State     string   `json:"state,omitempty"`
+	Listeners []string `json:"listeners,omitempty"`
 }
 
 type ProgramState string
@@ -56,6 +57,7 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 			StartTime: 0,
 			StopTime:  0,
 			State:     ProcessStateStopped,
+			Listeners: cfg.ListenAddrs,
 		},
 		startChan: make(chan struct{}, 1),
 	}

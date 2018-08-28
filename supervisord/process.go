@@ -15,11 +15,12 @@ type Program struct {
 	Name string
 	cfg  *ProgramConfig
 
-	process   *Process
-	files     []*os.File
-	maxRetry  int
-	logger    *log.Logger
-	startChan chan struct{}
+	process        *Process
+	files          []*os.File
+	maxRetry       int
+	logger         *log.Logger
+	startChan      chan struct{}
+	listenerInited bool // listener是否已经初始化
 
 	status *ProgramStatus
 }
@@ -67,25 +68,28 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 }
 
 func (program *Program) initListener() error {
-	var files []*os.File
-	for _, addr := range program.cfg.ListenAddrs {
-		var l net.Listener
-		var f *os.File
-		l, err := net.Listen("tcp", addr)
-		if err != nil {
-			program.status.State = ProcessStateFatal
-			return err
-		}
-		f, err = l.(*net.TCPListener).File()
-		if err != nil {
-			program.status.State = ProcessStateFatal
+	if !program.listenerInited {
+		var files []*os.File
+		for _, addr := range program.cfg.ListenAddrs {
+			var l net.Listener
+			var f *os.File
+			l, err := net.Listen("tcp", addr)
+			if err != nil {
+				program.status.State = ProcessStateFatal
+				return err
+			}
+			f, err = l.(*net.TCPListener).File()
+			if err != nil {
+				program.status.State = ProcessStateFatal
+				l.Close()
+				return err
+			}
 			l.Close()
-			return err
+			files = append(files, f)
 		}
-		l.Close()
-		files = append(files, f)
+		program.files = files
+		program.listenerInited = true
 	}
-	program.files = files
 	return nil
 }
 
@@ -93,6 +97,7 @@ func (program *Program) closeListener() {
 	for _, l := range program.files {
 		l.Close()
 	}
+	program.listenerInited = false
 }
 
 func (program *Program) Destory() {
@@ -115,6 +120,7 @@ func (program *Program) StartProcess() {
 	}
 	program.logger.Printf("start")
 	program.status.State = ProcessStateStarting
+	program.initListener()
 	go program.startNewProcess()
 	<-program.startChan
 	return
@@ -268,7 +274,8 @@ func (program *Program) StopProcess() (exitCode int) {
 	program.status.State = ProcessStateStopped
 	program.stopProc(proc)
 	program.status.StopTime = time.Now().Unix()
-	program.status.Pid = 0
+	// program.status.Pid = 0
+	program.closeListener()
 	program.process = nil
 	return
 }

@@ -30,9 +30,6 @@ func (supervisor *Supervisor) AddProgram(name string, progCfg *ProgramConfig) (p
 	supervisor.lock.Lock()
 	defer supervisor.lock.Unlock()
 	prog, err = NewProgram(name, progCfg)
-	if err != nil {
-		return
-	}
 	supervisor.porgrams[name] = prog
 	supervisor.cfg.ProgramConfigs[name] = progCfg
 	return

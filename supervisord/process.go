@@ -68,10 +68,12 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 		var f *os.File
 		l, err = net.Listen("tcp", addr)
 		if err != nil {
+			p.status.State = ProcessStateFatal
 			return
 		}
 		f, err = l.(*net.TCPListener).File()
 		if err != nil {
+			p.status.State = ProcessStateFatal
 			l.Close()
 			return
 		}
@@ -175,6 +177,7 @@ func (program *Program) startNewProcess() {
 		// 防止进程因为异常一直重启而不会被发现
 		case <-time.After(time.Second):
 			// 进程运行一段时间后，才能设置为Running
+			// TODO: 该时间可配置
 			program.status.State = ProcessStateRunning
 			program.maxRetry = 0
 			program.process = process

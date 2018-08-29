@@ -19,8 +19,8 @@ type Program struct {
 	files          []*os.File
 	maxRetry       int
 	logger         *log.Logger
-	startChan      chan struct{}
-	listenerInited bool // listener是否已经初始化
+	startChan      chan bool // 进程是否成功启动
+	listenerInited bool      // listener是否已经初始化
 
 	status *ProgramStatus
 }
@@ -60,7 +60,7 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 			State:     ProcessStateStopped,
 			Listeners: cfg.ListenAddrs,
 		},
-		startChan: make(chan struct{}, 1),
+		startChan: make(chan bool, 1),
 	}
 
 	err = p.initListener()
@@ -141,10 +141,10 @@ func (program *Program) startNewProcess() {
 			program.logger.Printf("open file %s: %s", program.cfg.StderrLogFile, err.Error())
 		}
 	}
-	if program.cfg.StderrLogFile != "" {
+	if program.cfg.StdoutLogFile != "" {
 		stdout, err = os.OpenFile(program.cfg.StdoutLogFile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 		if err != nil {
-			program.logger.Printf("open file %s: %s", program.cfg.StderrLogFile, err.Error())
+			program.logger.Printf("open file %s: %s", program.cfg.StdoutLogFile, err.Error())
 		}
 	}
 	progCmds := strings.Split(strings.TrimSpace(program.cfg.Command), " ")
@@ -195,7 +195,7 @@ func (program *Program) startNewProcess() {
 			program.status.State = ProcessStateRunning
 			program.maxRetry = 0
 			program.process = process
-			program.startChan <- struct{}{}
+			program.startChan <- true
 
 			result = <-resultChan
 
@@ -235,13 +235,15 @@ func (program *Program) shouldRetry() {
 			program.status.State = ProcessStateFatal
 			program.status.StopTime = time.Now().Unix()
 			program.process = nil
-			program.startChan <- struct{}{}
+			program.closeListener()
+			program.startChan <- false
 		}
 	} else {
 		program.logger.Printf("exited")
 		// 进程正常的结束，状态为Exited
 		program.status.State = ProcessStateExited
 		program.status.StopTime = time.Now().Unix()
+		program.closeListener()
 		program.process = nil
 	}
 }
@@ -254,8 +256,11 @@ func (program *Program) RestartProess() (process *Process) {
 	oldProc := program.process
 	program.status.State = ProcessStateStarting
 	program.maxRetry = 0
+	// 重启时也需要检查listener是否已经初始化
+	program.initListener()
 	go program.startNewProcess()
 	// 保证第二个进程已经启动
+	// TODO: 第二个进程启动失败时，第一个进程可以不停止，此时进程应该处于另一种状态
 	<-program.startChan
 	if oldProc != nil {
 		oldProc.spawn = true

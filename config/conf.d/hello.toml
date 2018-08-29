@@ -3,17 +3,17 @@ directory = "/Users/bounce/Documents/gowork/src/github.com/iampastor/supergo/too
 command = "./http_listener -arg=test1  hello"
 auto_restart = true
 stdout_logfile = ""
-stderr_logfile = ""
+stderr_logfile = "/tmp/hello.err"
 max_retry = 3
 listen_addrs = [":4042"]
 stop_timeout = 10
 
-[program.test2]
-directory = "/Users/bounce/Documents/gowork/src/github.com/iampastor/supergo/tools/http_listener"
-command = "./http_listener -arg=test2  world"
-auto_restart = true
-stdout_logfile = ""
-stderr_logfile = ""
-max_retry = 3
-listen_addrs = [":4042"]
-stop_timeout = 10
+#[program.test2]
+#directory = "/Users/bounce/Documents/gowork/src/github.com/iampastor/supergo/tools/http_listener"
+#command = "./http_listener -arg=test2  world"
+#auto_restart = true
+#stdout_logfile = ""
+#stderr_logfile = ""
+#max_retry = 3
+#listen_addrs = [":4042"]
+#stop_timeout = 10

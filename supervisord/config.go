@@ -68,7 +68,7 @@ func getConfigFiles(configPath string) []string {
 
 	configDir, filename := path.Split(configPath)
 	filename = strings.Replace(filename, "*", ".*", -1)
-	re, err := regexp.Compile(filename)
+	re, err := regexp.Compile("^" + filename + "$")
 	if err != nil {
 		log.Printf("parse config file files %s", err.Error())
 		return files

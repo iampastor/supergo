@@ -101,6 +101,9 @@ stderr_file = "/tmp/hello.err" # 进程的标准错误输出，为空将不会�
 max_retry = 3 # 重启的次数
 listen_addrs = [":4041"] # 进程需要监听的端口，从文件描述符3开始，可以为空
 stop_timeout = 10 # 重启时，将发送TRERM信号，如果超时进程还没有退出，将强行KILL
+
+[include]
+files = "config/conf.d/*.toml"
 ```
 
 ## TODO

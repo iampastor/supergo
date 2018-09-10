@@ -66,6 +66,10 @@ func ParseConfigFile(filepath string) (*SupervisorConfig, error) {
 func getConfigFiles(configPath string) []string {
 	var files []string
 
+	if configPath == "" {
+		return files
+	}
+
 	configDir, filename := path.Split(configPath)
 	filename = strings.Replace(filename, "*", ".*", -1)
 	re, err := regexp.Compile("^" + filename + "$")

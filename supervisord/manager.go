@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"reflect"
+	"sort"
 	"sync"
 )
 
@@ -113,6 +114,9 @@ func (supervisor *Supervisor) ListPrograms() []*Program {
 	for _, prog := range supervisor.porgrams {
 		progs = append(progs, prog)
 	}
+	sort.Slice(progs, func(i, j int) bool {
+		return progs[i].Name < progs[j].Name
+	})
 	return progs
 }
 
@@ -133,6 +137,9 @@ func (supervisor *Supervisor) GetStatus() []*ProgramStatus {
 		s := prog.Status()
 		status = append(status, s)
 	}
+	sort.Slice(status, func(i, j int) bool {
+		return status[i].Name < status[j].Name
+	})
 	return status
 }
 

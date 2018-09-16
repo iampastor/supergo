@@ -11,8 +11,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	// "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var l net.Listener
@@ -32,7 +31,7 @@ func main() {
 		}
 		fileListener.Close()
 		httpServer := &http.Server{}
-		http.Handle("/metrics", promhttp.Handler())
+		// http.Handle("/metrics", promhttp.Handler())
 		http.HandleFunc("/hello", func(resp http.ResponseWriter, req *http.Request) {
 			name := req.FormValue("name")
 			if name == "" {

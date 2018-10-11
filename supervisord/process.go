@@ -19,8 +19,7 @@ type Program struct {
 	files          []*os.File
 	maxRetry       int
 	logger         *log.Logger
-	startChan      chan bool // 进程是否成功启动
-	listenerInited bool      // listener是否已经初始化
+	listenerInited bool // listener是否已经初始化
 
 	status *ProgramStatus
 }
@@ -60,7 +59,6 @@ func NewProgram(name string, cfg *ProgramConfig) (p *Program, err error) {
 			State:     ProcessStateStopped,
 			Listeners: cfg.ListenAddrs,
 		},
-		startChan: make(chan bool, 1),
 	}
 
 	err = p.initListener()
@@ -122,7 +120,6 @@ func (program *Program) StartProcess() {
 	program.status.State = ProcessStateStarting
 	program.initListener()
 	go program.startNewProcess()
-	<-program.startChan
 	return
 }
 
@@ -195,7 +192,6 @@ func (program *Program) startNewProcess() {
 			program.status.State = ProcessStateRunning
 			program.maxRetry = 0
 			program.process = process
-			program.startChan <- true
 
 			result = <-resultChan
 
@@ -236,7 +232,6 @@ func (program *Program) shouldRetry() {
 			program.status.StopTime = time.Now().Unix()
 			program.process = nil
 			program.closeListener()
-			program.startChan <- false
 		}
 	} else {
 		program.logger.Printf("exited")
@@ -259,9 +254,7 @@ func (program *Program) RestartProess() (process *Process) {
 	// 重启时也需要检查listener是否已经初始化
 	program.initListener()
 	go program.startNewProcess()
-	// 保证第二个进程已经启动
 	// TODO: 第二个进程启动失败时，第一个进程可以不停止，此时进程应该处于另一种状态
-	<-program.startChan
 	if oldProc != nil {
 		oldProc.spawn = true
 		program.stopProc(oldProc)

@@ -7,6 +7,7 @@ stderr_logfile = "/tmp/hello.err"
 max_retry = 3
 listen_addrs = [":4042"]
 stop_timeout = 10
+stop_before_restart = false
 
 #[program.test2]
 #directory = "/Users/bounce/Documents/gowork/src/github.com/iampastor/supergo/tools/http_listener"
@@ -17,3 +18,4 @@ stop_timeout = 10
 #max_retry = 3
 #listen_addrs = [":4042"]
 #stop_timeout = 10
+#stop_before_restart = false

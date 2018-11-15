@@ -7,6 +7,7 @@
 #max_retry = 3 # 重启的次数
 #listen_addrs = [":4041"] # 进程需要监听的端口，从文件描述符3开始
 #stop_timeout = 10 # 重启时，将发送TRERM信号，如果超时进程还没有退出，将强行KILL
+#stop_before_restart = false # 重启时是否先停止老的进程，默认为false，既会先启动一个新的进程，再停止老的进程
 
 [include]
 files = "config/conf.d/*.toml"

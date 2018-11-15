@@ -130,14 +130,14 @@ func status() {
 	}
 	for _, ps := range progStatus {
 		if ps.State == supervisord.ProcessStateRunning {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-30s\t%-8s\tpid %-5d\tlisteners %v\tstart at %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
-				time.Unix(ps.StartTime, 0).Format("2006-01-02 15:04:05")))
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-30s\t%-8s\tpid %-5d\tstart at %s\tlisteners %v", ps.Name, ps.State, ps.Pid,
+				time.Unix(ps.StartTime, 0).Format("2006-01-02 15:04:05"), ps.Listeners))
 		} else if ps.State == supervisord.ProcessStateStopped {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-30s\t%-8s\tpid %-5d\tlisteners %v\tstop at %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
-				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05")))
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-30s\t%-8s\tpid %-5d\tstop at %s \tlisteners %v", ps.Name, ps.State, ps.Pid,
+				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05"), ps.Listeners))
 		} else {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-30s\t%-8s\tpid %-5d\tlisteners %v\tend at %s", ps.Name, ps.State, ps.Pid, ps.Listeners,
-				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05")))
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("%-30s\t%-8s\tpid %-5d\tend at %s  \tlisteners %v", ps.Name, ps.State, ps.Pid,
+				time.Unix(ps.StopTime, 0).Format("2006-01-02 15:04:05"), ps.Listeners))
 		}
 	}
 }

@@ -17,15 +17,16 @@ type SupervisorConfig struct {
 }
 
 type ProgramConfig struct {
-	Directory     string   `toml:"directory" json:"directory"`
-	Command       string   `toml:"command" json:"command"`
-	Args          []string `toml:"args" json:"args"`
-	AutoRestart   bool     `toml:"auto_restart" json:"auto_restart"`
-	StdoutLogFile string   `toml:"stdout_logfile" json:"stdout_logfile"`
-	StderrLogFile string   `toml:"stderr_logfile" json:"stderr_logfile"`
-	MaxRetry      int      `toml:"max_retry" json:"max_retry"`
-	ListenAddrs   []string `toml:"listen_addrs" json:"listen_addrs"`
-	StopTimeout   int      `toml:"stop_timeout" json:"stop_timeout"`
+	Directory         string   `toml:"directory" json:"directory"`
+	Command           string   `toml:"command" json:"command"`
+	Args              []string `toml:"args" json:"args"`
+	AutoRestart       bool     `toml:"auto_restart" json:"auto_restart"`
+	StdoutLogFile     string   `toml:"stdout_logfile" json:"stdout_logfile"`
+	StderrLogFile     string   `toml:"stderr_logfile" json:"stderr_logfile"`
+	MaxRetry          int      `toml:"max_retry" json:"max_retry"`
+	ListenAddrs       []string `toml:"listen_addrs" json:"listen_addrs"`
+	StopTimeout       int      `toml:"stop_timeout" json:"stop_timeout"`
+	StopBeforeRestart bool     `toml:"stop_before_restart" json:"stop_before_restart"`
 }
 
 func newSupervisordConfig() *SupervisorConfig {

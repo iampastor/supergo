@@ -251,13 +251,26 @@ func (program *Program) RestartProess() (process *Process) {
 	oldProc := program.process
 	program.status.State = ProcessStateStarting
 	program.maxRetry = 0
-	// 重启时也需要检查listener是否已经初始化
-	program.initListener()
-	go program.startNewProcess()
-	// TODO: 第二个进程启动失败时，第一个进程可以不停止，此时进程应该处于另一种状态
-	if oldProc != nil {
-		oldProc.spawn = true
-		program.stopProc(oldProc)
+	if program.cfg.StopBeforeRestart {
+		// 先停止，后启动新的进程
+		if oldProc != nil {
+			oldProc.spawn = true
+			program.stopProc(oldProc)
+		}
+		// 重启时也需要检查listener是否已经初始化
+		program.initListener()
+		go program.startNewProcess()
+
+	} else {
+		// 先启动新的进程，后停止
+		// 重启时也需要检查listener是否已经初始化
+		program.initListener()
+		go program.startNewProcess()
+		// TODO: 第二个进程启动失败时，第一个进程可以不停止，此时进程应该处于另一种状态
+		if oldProc != nil {
+			oldProc.spawn = true
+			program.stopProc(oldProc)
+		}
 	}
 
 	return

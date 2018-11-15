@@ -3,5 +3,5 @@ package supervisord
 import "testing"
 
 func Test_GetConfigFile(t *testing.T) {
-	t.Log(getConfigFiles("./mana*.go"))
+	t.Log(getConfigFiles("../*.toml"))
 }

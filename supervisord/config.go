@@ -5,8 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -70,21 +68,15 @@ func getConfigFiles(configPath string) []string {
 		return files
 	}
 
-	configDir, filename := path.Split(configPath)
-	filename = strings.Replace(filename, "*", ".*", -1)
-	re, err := regexp.Compile("^" + filename + "$")
-	if err != nil {
-		log.Printf("parse config file files %s", err.Error())
-		return files
-	}
+	configDir, namepatten := path.Split(configPath)
 	filepath.Walk(configDir, func(cpath string, info os.FileInfo, err error) error {
-		_, filename := path.Split(cpath)
+		_, fname := path.Split(cpath)
 		if err != nil {
 			log.Printf("parse config file files %s %s", cpath, err.Error())
 			return nil
 		}
-		if re.MatchString(filename) {
-			files = append(files, path.Join(configDir, filename))
+		if ok, _ := filepath.Match(namepatten, fname); ok {
+			files = append(files, cpath)
 		}
 		return nil
 	})
